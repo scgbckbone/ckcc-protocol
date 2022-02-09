@@ -26,7 +26,7 @@ from ckcc.constants import MAX_MSG_LEN, MAX_BLK_LEN, MAX_USERNAME_LEN
 from ckcc.constants import USER_AUTH_HMAC, USER_AUTH_TOTP, USER_AUTH_HOTP, USER_AUTH_SHOW_QR
 from ckcc.constants import AF_CLASSIC, AF_P2SH, AF_P2WPKH, AF_P2WSH, AF_P2WPKH_P2SH, AF_P2WSH_P2SH
 from ckcc.constants import STXN_FINALIZE, STXN_VISUALIZE, STXN_SIGNED
-from ckcc.client import ColdcardDevice, COINKITE_VID, CKCC_PID
+from ckcc.client import PysecpColdcardDevice, ColdcardDevice, COINKITE_VID, CKCC_PID
 from ckcc.sigheader import FW_HEADER_SIZE, FW_HEADER_OFFSET, FW_HEADER_MAGIC
 from ckcc.utils import dfu_parse, calc_local_pincode
 
@@ -58,7 +58,10 @@ def xfp2str(xfp):
 
 @contextlib.contextmanager
 def get_device():
-    device = ColdcardDevice(sn=force_serial, encrypt=not force_plaintext)
+    try:
+        device = PysecpColdcardDevice(sn=force_serial, encrypt=not force_plaintext)
+    except ImportError:
+        device = ColdcardDevice(sn=force_serial, encrypt=not force_plaintext)
     yield device
     device.close()
 
@@ -353,7 +356,6 @@ def get_fingerprint(swab):
 def get_version():
     """Get the version of the firmware installed"""
     with get_device() as dev:
-
         v = dev.send_recv(CCProtocolPacker.version())
 
         click.echo(v)

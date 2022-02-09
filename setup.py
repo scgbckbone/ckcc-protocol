@@ -19,6 +19,10 @@ cli_requirements = [
     'click>=6.7',
 ]
 
+pysecp_requirements = [
+    'python-secp256k1@git+https://github.com/scgbckbone/python-secp256k1.git@coldcard_ecdh'
+]
+
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
@@ -32,6 +36,7 @@ setup(
     install_requires=requirements,
     extras_require={
         'cli': cli_requirements,
+        'pysecp': pysecp_requirements,
     },
     url='https://github.com/Coldcard/ckcc-protocol',
     author='Coinkite Inc.',

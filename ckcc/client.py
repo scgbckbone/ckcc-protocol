@@ -22,6 +22,7 @@ CKCC_PID     = 0xcc10
 # Unix domain socket used by the simulator
 CKCC_SIMULATOR_PATH = '/tmp/ckcc-simulator.sock'
 
+
 class ColdcardDevice:
     def __init__(self, sn=None, dev=None, encrypt=True):
         # Establish connection via USB (HID) or Unix Pipe
@@ -338,6 +339,54 @@ class ColdcardDevice:
         salt = sha256(b'pepper' + self.serial.encode('ascii')).digest()
 
         return pbkdf2_hmac('sha256' if v3 else 'sha512', text_password, salt, PBKDF2_ITER_COUNT)[:32]
+
+
+class PysecpColdcardDevice(ColdcardDevice):
+    def __init__(self, sn=None, dev=None, encrypt=True):
+        super().__init__(sn=sn, dev=dev, encrypt=encrypt)
+
+    def ec_mult(self, his_pubkey):
+        import hashlib
+        from pysecp256k1 import ec_pubkey_parse
+        from pysecp256k1.ecdh import ecdh, ECDH_HASHFP_CLS
+
+        def py_ckcc_hashfp(output, x, y, data=None):
+            try:
+                m = hashlib.sha256()
+                m.update(x.contents.raw)
+                m.update(y.contents.raw)
+                output.contents.raw = m.digest()
+                return 1
+            except:
+                return 0
+
+        ckcc_hashfp = ECDH_HASHFP_CLS(py_ckcc_hashfp)
+
+        assert len(his_pubkey) == 64
+        # expect just points - prepend with
+        parsed_pubkey = ec_pubkey_parse(b"\x04" + his_pubkey)
+        shared = ecdh(self.my_key, parsed_pubkey, hashfp=ckcc_hashfp)
+        del self.my_key
+        return shared
+
+    def ec_setup(self):
+        from pysecp256k1 import ec_seckey_verify, ec_pubkey_create, ec_pubkey_serialize
+
+        self.my_key = os.urandom(32)
+        ec_seckey_verify(self.my_key)
+        pubkey = ec_pubkey_create(self.my_key)
+        ser_pubkey = ec_pubkey_serialize(pubkey, compressed=False)
+        prefix, _ser_pubkey = ser_pubkey[0], ser_pubkey[1:]
+        assert prefix == 4
+        assert len(_ser_pubkey) == 64
+        return _ser_pubkey
+
+    def mitm_verify(self, sig, expected_xpub):
+        from pysecp256k1 import ec_pubkey_parse, ecdsa_verify, ecdsa_signature_parse_compact
+        pubkey, _ = decode_xpub(expected_xpub)
+        pk = ec_pubkey_parse(pubkey)
+        signature = ecdsa_signature_parse_compact(sig[1:])
+        return ecdsa_verify(signature, pk, self.session_key)
 
 
 class UnixSimulatorPipe:

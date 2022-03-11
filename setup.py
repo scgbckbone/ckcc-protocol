@@ -19,6 +19,10 @@ cli_requirements = [
     'click>=6.7',
 ]
 
+tests_require = [
+    'pytest'
+]
+
 pysecp_requirements = [
     'python-secp256k1@git+https://github.com/scgbckbone/python-secp256k1.git@coldcard_ecdh'
 ]
@@ -34,6 +38,7 @@ setup(
     packages=[ 'ckcc' ],
     python_requires='>3.6.0',
     install_requires=requirements,
+    tests_require=tests_require,
     extras_require={
         'cli': cli_requirements,
         'pysecp': pysecp_requirements,

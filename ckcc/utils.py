@@ -8,6 +8,31 @@ from collections import namedtuple
 
 B2A = lambda x: binascii.b2a_hex(x).decode('ascii')
 
+CR = b'\r'
+CRLF = b'\r\n'
+LF = b'\n'
+
+
+def sanitize_msg(msg: str) -> bytes:
+    # Message Sanitization Extension
+    # https://github.com/ZenulAbidin/bips/blob/master/bip-notatether-signedmessage.mediawiki
+    try:
+        msg = msg.encode('ascii')
+    except UnicodeEncodeError:
+        raise ValueError("Must be ascii")
+    if b"\x00" in msg:
+        raise ValueError("Message contains embedded NUL characters")
+    # Convert CRLF and CR newlines to LF
+    msg = msg.replace(CRLF, LF)
+    msg = msg.replace(CR, LF)
+    # Strip all tab and space characters from the ends of all lines - rstrip does exactly this
+    # and replace all remaining tabs to 8 spaces
+    lines = [line.rstrip().replace(b"\t", 8 * b" ") for line in msg.split(b"\n")]
+    msg = b"\n".join(lines)
+    # Remove all trailing newlines from the end of the message.
+    msg = msg.rstrip(b"\n")
+    return msg
+
 
 def xfp2str(xfp):
     # Standardized way to show an xpub's fingerprint... it's a 4-byte string

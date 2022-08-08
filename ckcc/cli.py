@@ -27,10 +27,10 @@ from ckcc.protocol import CCProtoError, CCUserRefused, CCBusyError
 from ckcc.constants import MAX_MSG_LEN, MAX_BLK_LEN, MAX_USERNAME_LEN
 from ckcc.constants import USER_AUTH_HMAC, USER_AUTH_TOTP, USER_AUTH_HOTP, USER_AUTH_SHOW_QR
 from ckcc.constants import AF_CLASSIC, AF_P2SH, AF_P2WPKH, AF_P2WSH, AF_P2WPKH_P2SH, AF_P2WSH_P2SH
-from ckcc.constants import STXN_FINALIZE, STXN_VISUALIZE, STXN_SIGNED
+from ckcc.constants import STXN_FINALIZE, STXN_VISUALIZE, STXN_SIGNED, SIGN_MSG_BIP_TEMPLATE
 from ckcc.client import ColdcardDevice, COINKITE_VID, CKCC_PID
 from ckcc.sigheader import FW_HEADER_SIZE, FW_HEADER_OFFSET, FW_HEADER_MAGIC
-from ckcc.utils import dfu_parse, calc_local_pincode, xfp2str, B2A, decode_xpub, get_pubkey_string
+from ckcc.utils import dfu_parse, calc_local_pincode, xfp2str, B2A, decode_xpub, get_pubkey_string, sanitize_msg
 from ckcc.electrum import filepath_append_cc, convert2cc
 
 global force_serial
@@ -395,7 +395,8 @@ def run_eval(stmt):
 @click.option('--just-sig', '-j', is_flag=True, help='Just the signature itself, nothing more')
 @click.option('--segwit', '-s', is_flag=True, help='Address in segwit native (p2wpkh, bech32)')
 @click.option('--wrap', '-w', is_flag=True, help='Address in segwit wrapped in P2SH (p2wpkh)')
-def sign_message(message, path, verbose=True, just_sig=False, wrap=False, segwit=False):
+@click.option('--sanitize', is_flag=True, help='Sanitize message according to BIPXX')
+def sign_message(message, path, verbose=True, just_sig=False, wrap=False, segwit=False, sanitize=False):
     """Sign a short text message"""
     with get_device() as dev:
 
@@ -406,11 +407,10 @@ def sign_message(message, path, verbose=True, just_sig=False, wrap=False, segwit
         else:
             addr_fmt = AF_CLASSIC
 
-        # NOTE: initial version of firmware not expected to do segwit stuff right, since
-        # standard very much still in flux, see: <https://github.com/bitcoin/bitcoin/issues/10542>
-
-        # not enforcing policy here on msg contents, so we can define that on product
-        message = message.encode('ascii') if not isinstance(message, bytes) else message
+        if sanitize:
+            message = sanitize_msg(message)
+        else:
+            message = message.encode('ascii') if not isinstance(message, bytes) else message
 
         ok = dev.send_recv(CCProtocolPacker.sign_message(message, path, addr_fmt), timeout=None)
         assert ok == None
@@ -440,9 +440,9 @@ def sign_message(message, path, verbose=True, just_sig=False, wrap=False, segwit
         if just_sig:
             click.echo(str(sig))
         elif verbose:
-            click.echo('-----BEGIN SIGNED MESSAGE-----\n{msg}\n-----BEGIN '
-                      'SIGNATURE-----\n{addr}\n{sig}\n-----END SIGNED MESSAGE-----'.format(
-                            msg=message.decode('ascii'), addr=addr, sig=sig))
+            click.echo(
+                SIGN_MSG_BIP_TEMPLATE.format(msg=message.decode('ascii'), addr=addr, sig=sig)
+            )
         else:
             click.echo('%s\n%s\n%s' % (message.decode('ascii'), addr, sig))
 

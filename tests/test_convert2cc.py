@@ -1,5 +1,4 @@
 import os
-import re
 import json
 import pytest
 from click.testing import CliRunner

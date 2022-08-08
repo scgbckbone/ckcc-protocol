@@ -104,4 +104,14 @@ PSBT_OUT_REDEEM_SCRIPT      = const(0)
 PSBT_OUT_WITNESS_SCRIPT     = const(1)
 PSBT_OUT_BIP32_DERIVATION   = const(2)
 
+# https://github.com/ZenulAbidin/bips/blob/master/bip-notatether-signedmessage.mediawiki
+SIGN_MSG_BIP_TEMPLATE = '''\
+-----BEGIN {blockchain} SIGNED MESSAGE-----
+{msg}
+-----BEGIN {blockchain} SIGNATURE-----
+{addr}
+{sig}
+-----END {blockchain} SIGNATURE-----
+'''
+
 # EOF

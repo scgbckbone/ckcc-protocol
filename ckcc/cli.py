@@ -611,7 +611,7 @@ def str_to_int_path(xfp, path):
     # convert text  m/34'/33/44 into BIP174 binary compat format
     # - include hex for fingerprint (m) as first arg
 
-    rv = [struct.unpack('<I', a2b_hex(xfp))[0]]
+    rv = [a2b_hex(xfp)]
     for i in path.split('/'):
         if i == 'm':
             continue

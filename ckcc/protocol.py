@@ -160,7 +160,7 @@ class CCProtocolPacker:
 
         for xfp_path in xfp_paths:
             ln = len(xfp_path)
-            rv += pack('<B%dI' % ln, ln, *xfp_path)
+            rv += pack('<B4s%dI' % (ln - 1), ln, xfp_path[0], *xfp_path[1:])
 
         return rv
 
@@ -281,7 +281,7 @@ class CCProtocolUnpacker:
         # - info about master key: xpub, fingerprint of that
         # - anti-MitM: remote xpub 
         # session key is SHA256(point on sec256pk1 in binary) via D-H
-        dev_pubkey, fingerprint, xpub_len = unpack_from('64sII', msg, 4)
+        dev_pubkey, fingerprint, xpub_len = unpack_from('64s4sI', msg, 4)
         xpub = msg[-xpub_len:] if xpub_len else b''
         return dev_pubkey, fingerprint, xpub
 

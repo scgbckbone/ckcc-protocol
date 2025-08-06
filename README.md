@@ -159,3 +159,30 @@ Commands:
   get     Get registered miniscript wallet by name.
   ls      List registered miniscript wallet names.
 ```
+
+## Backup/Restore
+
+```
+Usage: ckcc backup [OPTIONS]
+
+  Creates 7z encrypted backup file after prompting user to remember a massive
+  passphrase. Downloads the AES-encrypted data backup and by default, saves
+  into current directory using a filename based on today's date.
+
+Options:
+  -d, --outdir DIRECTORY     Save into indicated directory (auto filename)
+  -o, --outfile filename.7z  Name for backup file
+  --help                     Show this message and exit.
+```
+
+```
+Usage: ckcc restore [OPTIONS] backup.7z
+
+Options:
+  -c, --plaintext  Force plaintext restore. No need to use if file has proper
+                   '.txt' suffix
+  -p, --password   This backup has custom password. Not words.
+  -t, --tmp        Force restoring backup as temporary seed. Only works for
+                   seedless Coldcard.
+  --help           Show this message and exit.
+```

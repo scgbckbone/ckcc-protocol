@@ -1,4 +1,6 @@
-# (c) Copyright 2018-2022 by Coinkite Inc. This file is covered by license found in COPYING-CC.
+# Autogen'ed file, don't edit. See stm32/sigheader.h for original
+
+# (c) Copyright 2018 by Coinkite Inc. This file is covered by license found in COPYING-CC.
 
 # Our simple firmware header.
 # Although called a header, this data is placed into the middle of the binary.
@@ -10,9 +12,10 @@
 # - version_string is for humans only
 # - pubkey_num indicates which pubkey was used for signature
 # - firmware_length, must be:
-#   - bigger than minimum length, less than max
-#   - 512-byte aligned
+# - bigger than minimum length, less than max
+# - 512-byte aligned
 # - bootloader assumes the flash filesystem (FAT FS) follows the firmware.
+# - this C header file is somewhat parsed and used by python signature-adding code
 # - timestamp is YYMMDDHHMMSS0000 in BCD
 
 
@@ -26,8 +29,8 @@ FW_HEADER_MAGIC = 0xCC001234
 # arbitrary min size
 FW_MIN_LENGTH = (256*1024)
 
-# (mk1-3) absolute max size: 1MB flash - 32k for bootloader
-# practical limit for our-protocol USB upgrades: 786432 (or else settings damaged)
+# (mk1-3) absolute max size: 1MB flash - 32k for bootloader = 1,015,808
+# - but practical limit for our-protocol USB upgrades: 786432 (or else settings damaged)
 FW_MAX_LENGTH = (0x100000 - 0x8000)
 
 # .. for Mk4: 2Mbytes, less bootrom of 128k.
@@ -51,7 +54,7 @@ MK_2_OK = 0x02
 MK_3_OK = 0x04
 MK_4_OK = 0x08
 MK_Q1_OK = 0x10
-# RFU:
-MK_6_OK = 0x20
+MK_5_OK = 0x20
+
 
 # EOF

@@ -162,6 +162,13 @@ PSBT_IN_MUSIG2_PARTICIPANT_PUBKEYS  = const(0x1a)
 PSBT_IN_MUSIG2_PUB_NONCE            = const(0x1b)
 PSBT_IN_MUSIG2_PARTIAL_SIG          = const(0x1c)
 
+PSBT_IN_AE_HOST                     = const(0x21)
+PSBT_IN_AE_SIGNER                   = const(0x22)
+PSBT_IN_AE_ENTROPY                  = const(0x23)
+PSBT_IN_TAP_AE_HOST                 = const(0x24)
+PSBT_IN_TAP_AE_SIGNER               = const(0x25)
+PSBT_IN_TAP_AE_ENTROPY              = const(0x26)
+
 # OUTPUTS ===
 PSBT_OUT_REDEEM_SCRIPT 	            = const(0x00)
 PSBT_OUT_WITNESS_SCRIPT 	        = const(0x01)

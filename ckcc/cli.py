@@ -32,6 +32,7 @@ from ckcc.sigheader import FW_HEADER_SIZE, FW_HEADER_OFFSET, FW_HEADER_MAGIC
 from ckcc.utils import dfu_parse, calc_local_pincode, xfp2str, B2A, decode_xpub
 from ckcc.utils import get_pubkey_string, descriptor_template, addr_fmt_help, txn_to_pushtx_url
 from ckcc.electrum import filepath_append_cc, convert2cc
+from ckcc.bip322 import build_bip322_psbt
 
 global force_serial
 force_serial = None
@@ -417,11 +418,38 @@ def run_eval(stmt):
 @click.option('--just-sig', '-j', is_flag=True, help='Just the signature itself, nothing more')
 @click.option('--segwit', '-s', is_flag=True, help='Address in segwit native (p2wpkh, bech32)')
 @click.option('--wrap', '-w', is_flag=True, help='Address in segwit wrapped in P2SH (p2sh-p2wpkh)')
-def sign_message(message, path, verbose, just_sig, wrap, segwit):
+@click.option('--bip322', is_flag=True, help='Build a single-input BIP-322 PSBT, sign it on the Coldcard, and output the signed PSBT')
+@click.option('--output', '-o', type=click.File('wb'), default=None, help='With --bip322: also write the raw signed PSBT bytes to this file')
+def sign_message(message, path, verbose, just_sig, wrap, segwit, bip322, output):
     """Sign a short text message"""
     with get_device() as dev:
 
         addr_fmt, af_path = addr_fmt_help(dev, wrap, segwit)
+
+        if bip322:
+            signing_path = path or af_path
+
+            # ask the Coldcard for the xpub at the signing path; its embedded leaf pubkey
+            # is the key we prove control of (no client-side BIP32 derivation needed)
+            xpub = dev.send_recv(CCProtocolPacker.get_xpub(signing_path), timeout=None)
+            pubkey, _ = decode_xpub(xpub)
+
+            msg_bytes = message.encode('ascii') if not isinstance(message, bytes) else message
+            psbt_bytes = build_bip322_psbt(pubkey, msg_bytes, addr_fmt,
+                                           dev.master_fingerprint, signing_path)
+
+            # upload + sign + download, mirroring the `sign` command
+            txn_len, sha = real_file_upload(io.BytesIO(psbt_bytes), dev)
+            ok = dev.send_recv(CCProtocolPacker.sign_transaction(txn_len, sha), timeout=None)
+            assert ok is None
+
+            result, _ = wait_and_download(dev, CCProtocolPacker.get_signed_txn(), 1)
+
+            # always print base64-encoded PSBT to stdout; with -o, also write raw bytes to file
+            click.echo(b64encode(result))
+            if output:
+                output.write(result)
+            return
 
         # NOTE: initial version of firmware not expected to do segwit stuff right, since
         # standard very much still in flux, see: <https://github.com/bitcoin/bitcoin/issues/10542>

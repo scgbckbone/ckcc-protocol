@@ -463,6 +463,34 @@ def sign_message(message, path, verbose, just_sig, wrap, segwit):
             click.echo('%s\n%s\n%s' % (message.decode('ascii'), addr, sig))
 
 
+@main.command('ident')
+def device_ident():
+    """Show device identity code: full UID and seed tag (needs OK on device)"""
+    with get_device() as dev:
+        ok = dev.send_recv(CCProtocolPacker.get_device_ident(), timeout=None)
+        assert ok == None
+
+        print("Waiting for OK on the Coldcard...", end='', file=sys.stderr)
+        sys.stderr.flush()
+
+        while 1:
+            time.sleep(0.250)
+            done = dev.send_recv(CCProtocolPacker.get_device_ident_done(), timeout=None)
+            if done == None:
+                continue
+
+            break
+
+        print("\r                                  \r", end='', file=sys.stderr)
+        sys.stderr.flush()
+
+        # 18 bytes: 12-byte UID + 6-byte tag
+        assert len(done) == 18, 'unexpected ident response length'
+        uid, tag = done[0:12], done[12:18]
+        click.echo('UID:       %s' % b2a_hex(uid).decode('ascii'))
+        click.echo('Seed tag:  %s' % b2a_hex(tag).decode('ascii'))
+
+
 @main.command('msg-file')
 @click.argument('json_file', type=click.Path(exists=True, dir_okay=False), metavar="FILE_PATH")
 @click.option('--outfile', '-o', type=click.Path(), default=None,

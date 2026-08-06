@@ -59,6 +59,17 @@ class CCProtocolPacker:
         return b'pwok'
 
     @staticmethod
+    def get_device_ident():
+        # start device identity disclosure (requires on-device approval)
+        return b'uidh'
+
+    @staticmethod
+    def get_device_ident_done():
+        # poll completion; result is 18 bytes: 12-byte UID + 6-byte tag
+        # - tag = HMAC-SHA256(key=master_privkey, msg=b'COLDCARD-IDENT' + uid)[0:6]
+        return b'uiok'
+
+    @staticmethod
     def check_mitm():
         return b'mitm'
 
